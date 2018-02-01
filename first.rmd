@@ -1,0 +1,42 @@
+---
+title: "Kevin's first markdown file"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(readr)
+library(ggplot2)
+```
+
+## Reading the Data
+
+The data was collected from a class survey. The data pertains to student's favorite restaurants.  
+
+```{r restaurant_data, echo=FALSE}
+input1 <- read_csv("fav_restaurants.csv")
+
+```
+
+## Plotting the Data
+
+This plot shows the relationship between the yearly visits and the cost per person.
+
+```{r plot, echo=FALSE}
+ggplot(input1,aes(input1$cost_per_person,input1$yearly_visits)) + geom_point()
+```
+
+This next plot shows the frequency of eating out.
+```{r plot}
+cuisines.freq = table(input1$cuisine)
+barplot(cuisines.freq)
+```
+
+
+
+
+
+
+
+

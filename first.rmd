@@ -28,7 +28,7 @@ ggplot(input1,aes(input1$cost_per_person,input1$yearly_visits)) + geom_point()
 ```
 
 This next plot shows the frequency of eating out.
-```{r plot}
+```{r plot2}
 cuisines.freq = table(input1$cuisine)
 barplot(cuisines.freq)
 ```

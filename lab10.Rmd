@@ -1,0 +1,172 @@
+---
+title: "Lab 10: Filtering Data"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(fig.height = 5)
+knitr::opts_chunk$set(fig.width = 8.5)
+knitr::opts_chunk$set(out.width = "100%")
+knitr::opts_chunk$set(dpi = 300)
+
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(viridis)
+theme_set(theme_minimal())
+```
+
+## Pick a dataset
+
+Today you will again have a choice of three datasets to work with. You can
+choose either to investigate the daily team ELO ratings in the NBA:
+
+```{r}
+nba <- read_csv("https://statsmaths.github.io/stat_data/nba_elo_daily.csv")
+```
+
+Metadata from US senator's tweets:
+
+```{r}
+tweets <- read_csv("https://statsmaths.github.io/stat_data/senator_tweets_meta.csv")
+```
+
+Or swear words given in the movies of Quentin Tarantino:
+
+```{r}
+tarantino <- read_csv("https://statsmaths.github.io/stat_data/tarantino.csv")
+```
+
+Pick a dataset (feel free to delete the others from the Rmd file if you would
+like), and work on the instructions in the next section.
+
+## Instructions
+
+This lab is similar to the last. You'll pick a dataset and then generate an
+analysis of that data using data visualizations. The difference here is that
+instead of a single plot, I would like you to construct 3-4 plots that
+together tell a linear story. Each plot should be separated by a sentence or
+two describing what the viewer should take away from the plot. Try to keep the
+plots similar in some way; perhaps each simply highlights a different subset
+of the data but has the same underlying layers.
+
+Notice that each of the datasets for today are larger than you will probably
+be able to use. You will need to filter the data to a particular team, year,
+subset of curse words. You may further filter the data to highlight an even
+smaller subset of the data within each plot.
+
+## Analysis
+
+```{r}
+GSW_data <- filter(nba, team == "GSW")
+ggplot(GSW_data, aes(date, elo)) +
+  geom_line(aes(group=season)) + ggtitle("Golden State Warriors ELO") +
+  
+  # highest elo
+  annotate("point", x = as.Date("2017-06-07"), y = 1865.449, color = "blue", size = 3) +
+  annotate("text", x = as.Date("2014-02-07"), y = 1866.449, label = "Highest ELO") +
+  
+  # lowest ELO
+  annotate("point", x = as.Date("2001-04-18"), y = 1218.101, color = "blue", size = 3) +
+  annotate("text", x = as.Date("2004-07-18"), y = 1218.101, label = "Lowest ELO") +
+
+  # first championship/large jump 
+  annotate("point", x = as.Date("2015-06-16"), y = 1822.288, color = "blue", size = 3) +
+  annotate("text", x = as.Date("2010-09-16"), y = 1822.288, label = "First Championship") +
+  annotate("point", x = as.Date("2014-10-29"), y = 1602.863, color = "blue", size = 3) +
+  annotate("text", x = as.Date("2007-10-29"), y = 1652.863, label = "Start of 2014-2015 Season")
+
+
+
+
+  
+```
+
+This plot shows the story of the skill level of the Golden State Warriors through 
+its existance. The min is in 2001, and during that year, their final record was 
+21-51, finishing last in the West. On the contrary, their peak was in June 2017, 
+which is when they won the championship.   
+
+```{r}
+GSW_data1 <- filter(GSW_data, season > 2000)
+ggplot(GSW_data1, aes(date, elo)) +
+  geom_line(aes(group=season)) + ggtitle("Golden State Warriors ELO") +
+  
+  # highest elo
+  annotate("point", x = as.Date("2017-06-07"), y = 1865.449, color = "blue", size = 3) +
+  annotate("text", x = as.Date("2017-06-07"), y = 1895.449, label = "Highest ELO") +
+  
+  # lowest ELO
+  annotate("point", x = as.Date("2001-04-18"), y = 1218.101, color = "blue", size = 3) +
+  annotate("text", x = as.Date("2002-07-18"), y = 1218.101, label = "Lowest ELO") +
+
+  # first championship/large jump 
+  annotate("point", x = as.Date("2015-06-16"), y = 1822.288, color = "blue", size = 3) +
+  annotate("text", x = as.Date("2013-09-16"), y = 1822.288, label = "First Championship") +
+  annotate("point", x = as.Date("2014-10-29"), y = 1602.863, color = "blue", size = 3) +
+  annotate("text", x = as.Date("2016-04-29"), y = 1570.863, label = "Start of 2014-2015 Season")
+
+
+```
+
+The graph shows the large jump in elo from winning the first championship in the 2014-2015 season. 
+You can also see a similar looking pattern two seasons later, when they reach their 
+highest recorded ELO by winning the championship in a record breaking fashion (12-1 record).
+
+
+```{r}
+GSW_data2 <- filter(GSW_data, season > 2014)
+library(viridis)
+
+ggplot(GSW_data2, aes(date, elo)) +
+  geom_line(aes(group=season, color=factor(season))) + ggtitle("Golden State Warriors ELO") +
+  # highest elo
+  annotate("point", x = as.Date("2017-06-07"), y = 1865.449, color = "blue", size = 3) +
+  annotate("text", x = as.Date("2017-06-07"), y = 1875.449, label = "Second Championship") +
+  
+  # first championship/large jump 
+  annotate("point", x = as.Date("2015-06-16"), y = 1822.288, color = "blue", size = 3) +
+  annotate("text", x = as.Date("2015-06-15"), y = 1832.288, label = "First Championship") +
+  
+  # 2016 season drop
+  annotate("point", x = as.Date("2016-06-19"), y = 1755.639, color = "blue", size = 3) +
+  annotate("text", x = as.Date("2016-06-19"), y = 1745.639, label = "Loss in Finals") +
+
+  # 2018 season drop
+  annotate("point", x = as.Date("2018-02-10"), y = 1674.407, color = "blue", size = 3) +
+  annotate("text", x = as.Date("2018-02-10"), y = 1660.407, label = "Current ELO")
+
+
+```
+
+This graph breaks down the last 4 seasons to visualize the growth and fall of the 
+Golden State Warriors ELO. The championships are straightforward, as they win, their 
+elo grows. The drop from the second championship can be attributed as a result of
+losing one game to the Cleveland Cavaliers. In the 2016 season, the Warriors broke 
+the single season regular season wins record, with 73 wins (73-9 record) and the results are 
+shown with an elo that remains fairly consistant through the season. The large drop
+at the end is a result of throwing a 3-1 lead in the finals against the Cleveland Cavaliers. 
+The Warriors are doing well this season and the drop in current elo is the result of losing 3 out
+of 4 games between January 30th and February 6th. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

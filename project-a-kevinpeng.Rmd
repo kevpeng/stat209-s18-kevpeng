@@ -1,0 +1,235 @@
+---
+title: "Kevin Peng vs. Ryan Namgung, a Basketball Analysis"
+author: "Kevin Peng"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(plyr)
+
+```
+
+
+## Overview
+
+My roommate and I have a slight rivalry on the basketball court. In order to determine
+who is the best, we decided to have a 1v1 match and record stats for each possession.
+We played the game as first to 50 points, counting shot values as 2-pointers or 3-pointers.
+Statistics recorded in this project included variables such as shot type, 
+shot number, defense level, and more. The game was filmed and data was extracted from it. 
+When collected, the data was then seperated into two serperate datasets, one for me and one for Ryan, with the same variables
+for clarity.
+Ultimately, this research is not only used to determine who is better at basketball. It 
+also provides the opportunity to learn our strengths/weaknesses and 
+analyze tendencies/references on the basketball court. This data will 
+provide us with parts of the game that each of us need to improve on. 
+
+## Data dictionary
+
+Here is a data dictionary for the kevin_basketball and ryan_basketball datasets:
+
+### numeric variables
+- possession: a numeric variable that determines which possession of the game either Ryan and I are at, independently.
+- shot_value: a numeric variable that describes the value of a given shot, a two or a three pointer.
+- field_goals_attempted: a numeric variable that describes how many total shots each player has taken.
+- field_goals_made: a numeric variable that describes how many total shots each player has made. 
+- three_pointers_attempted: a numeric variable that describes how many threes each player has taken.
+- three_pointers_made: a numeric variable that describes how many threes each player has made.
+- score: a numeric variable that keeps track of the score as the game progresses, independent for each player. 
+
+### categorical variables
+- player_name: a categorical variable that determines who has possession of the ball at a given time. The format will be player's initials, "K" for Kevin, and "R" for Ryan. 
+- shot_type: a categorical variable that describes that type of shot taken by a player. Possible options are:
+    - "layup"
+    - "jumpshot"
+    - "fadeaway" (jumpshot with a backwards jump)
+- shot_contestion: a categorical variable that describes the level of defense played during the point. Possible levels are "low, medium, high".
+- make_miss: a categorical variable that describes if a shot was made of missed. 
+
+
+
+The datasets can be read in as follows:
+```{r message=FALSE}
+kevin_basketball <- read_csv("https://raw.githubusercontent.com/URstats/stat209-s18-kevpeng/master/kevin_data.csv")
+ryan_basketball <- read.csv("https://raw.githubusercontent.com/URstats/stat209-s18-kevpeng/master/ryan_data.csv")
+```
+
+
+```{r echo=FALSE}
+(kevin_basketball)
+(ryan_basketball)
+```
+
+## Exploratory Analysis
+
+
+### Score Progression
+
+Throughout the game, I knew my strengths were shooting three pointers. As a result, I did my best to shoot as many of them as I can. The following plot shows what value shot I took each possession, along with a line to show what point is victory.  
+
+```{r, echo=FALSE}
+ggplot(kevin_basketball, aes(possession, score)) +
+  geom_point(aes(color=factor(shot_value))) + 
+  ggtitle("Kevin Shot Values") +
+  geom_hline(yintercept = 50, col = "red")
+```
+
+
+The following plot shows what value shots Ryan took each possession.
+```{r, echo=FALSE}
+ggplot(ryan_basketball, aes(possession, score)) +
+  geom_point(aes(color=factor(shot_value))) + 
+  ggtitle("Ryan Shot Values") +
+  geom_hline(yintercept = 50, col = "red")
+
+```
+
+From the data, it can be observed that I win by reaching 50 points first. In 
+addition, while comparing these plots, the score line on mine has steeper slopes
+than Ryan's. This is attributed to scoring streaks, where I score
+multiple buckets in a row. Ryan's plot has lower shopes because he would 
+not go on scoring streaks, frequently missing after making one. 
+
+### 3-Pointers
+
+I decided to dig deeper into the three pointer data. 
+I filtered the data into a new dataset that only contained shots
+that were 3-pointers. I then plotted it with the shot make/made as 
+an aestetic. I took the data further by filtering it based 
+on shot_contestion, or defense level and examined shooting 
+percentages based on different defense. 
+
+```{r, echo=FALSE}
+three_pointers_kevin <- filter(kevin_basketball, shot_value == 3)
+ggplot(three_pointers_kevin, aes(possession, score)) +
+  geom_point(aes(shape=make_miss, color=shot_contestion), size = 1.5) + 
+  ggtitle("Kevin 3-Point Shot")
+
+# further filtering
+three_kevin_low  <- filter(three_pointers_kevin, shot_contestion == "low")
+three_kevin_med  <- filter(three_pointers_kevin, shot_contestion == "med")
+three_kevin_high <- filter(three_pointers_kevin, shot_contestion == "high")
+
+# low defense percent
+three_low_kev_percent = sum(three_kevin_low$make_miss == "make") / length(three_kevin_low$make_miss)
+print("kevin three pointer %, low defense")
+print(three_low_kev_percent)
+
+# med defense percent
+three_med_kev_percent = sum(three_kevin_med$make_miss == "make") / length(three_kevin_med$make_miss)
+print("kevin three pointer %, medium defense")
+print(three_med_kev_percent)
+
+# high defense percent
+three_high_kev_percent = sum(three_kevin_high$make_miss == "make") / length(three_kevin_high$make_miss)
+print("kevin three pointer %, high defense")
+print(three_high_kev_percent)
+
+# overall three shooting %
+three_percentage_kev = (max(three_pointers_kevin$three_pointers_made) / 
+    max(three_pointers_kevin$three_pointers_attempted))
+print("kevin three pointer %, overall")
+print(three_percentage_kev)
+
+
+```
+
+
+```{r, echo=FALSE}
+three_pointers_ryan <- filter(ryan_basketball, shot_value == 3)
+ggplot(three_pointers_ryan, aes(possession, score)) +
+  geom_point(aes(shape=make_miss, color=shot_contestion), size = 2) + 
+  ggtitle("Ryan 3-Point Shot")
+three_percentage_ryan =   
+  (max(three_pointers_ryan$three_pointers_made) / 
+    max(three_pointers_ryan$three_pointers_attempted))
+print("ryan three pointer %, overall")
+print(three_percentage_ryan)
+```
+
+From the data, there is a clear winner, at least in
+3-point shooting percentage. Overall, I shot 36.84%, while Ryan shot 6.25%. 
+
+I looked at the defense levels ability on my shooting percentages. 
+While the defense level is low, my shooting percentage is the highest, which
+is to be expected, at 40%. What was surprising was how having medium defense 
+was more detrimental to my shot than high defense, with a 25% chance for medium 
+defense, and a 36% for high defense. Having a high level of defense only dropped 
+my shot by ~4% vs. having low defense. This data suggests that playing the right
+level of defense is required to decrease my shooting percentage.
+
+For Ryan, all of his 3-point attempts had low defense, so it was not filtered into detail.
+
+### 2-Pointers
+
+I filtered data into only 2-pointers as well. Once filtered to only 2 pointers, 
+I wanted to see how we both fare shooting from inside the 3-point line. 
+
+```{r, echo=FALSE}
+two_pointers_kevin <- filter(kevin_basketball, shot_value == 2)
+ggplot(two_pointers_kevin, aes(possession, score)) +
+  geom_point(aes(shape=make_miss, color=shot_type), size = 3) + 
+  ggtitle("Kevin 2-Point Shot")
+
+# overall two shooting %
+two_percentage_kev = 6/23
+print("kevin two pointer %, overall")
+print(two_percentage_kev)
+
+```
+
+```{r, echo=FALSE}
+two_pointers_ryan <- filter(ryan_basketball, shot_value == 2)
+ggplot(two_pointers_ryan, aes(possession, score)) +
+  geom_point(aes(shape=make_miss, color=shot_type), size = 2) + 
+  ggtitle("Ryan 2-Point Shot")
+
+# overall two shooting %
+two_percentage_ryan = 20/42
+
+print("ryan two pointer %, overall")
+print(two_percentage_ryan)
+
+
+```
+
+Based on the data, we are able to see where Ryan gets the majority of his
+points from. Compared to his 3-point percentage, his 2-point percentage is 
+excellent. His 47.6% is better than my 26% from 2-point range. Additionally,
+Ryan shot approximately twice as many 2-pointers than I did, 42 to 23. This
+data shows that Ryan is more comfortable driving in and shooting from close range,
+and he has the advantage doing so. 
+
+
+## Conclusion
+
+From this project, Ryan and I were able to determine a winner. I ultimately won out,
+with a final score of 51-43. In addition, I was able to calculate both of our shooting
+percentages, inside and outside the three point line. I learned that my tendency and preference is to shoot 
+from long distance, attempting 38 3-pointers to 23 2-pointers, with only 7 layup attempts. 
+Ryan's preference was shooting from close range, attempting 17 3-pointers to 42 2-pointers, with 20 layup
+attemps. Ryan's results may be skewed because he attempted a large number of 3-pointers, missing the last 16 in a row. 
+I recommended that he improve shooting from outside, or shoot more from the inside, to his advantage. 
+I was also able to determine that I must work on making shots when closer to the basket. 
+
+Other variables that I would like to add to this project pertain to misses. 
+I would include which direction the ball missed: left, right, far, or short. 
+From an analysis I would be able to determine how to improve based on which direction was
+most frequent. For example, if the ball misses left, shoot more right. 
+
+Ultimately, basketball is a game of numbers and whoever gets more numbers, will be the winner. 
+
+## References
+### Special thanks to:
+  - Joseph Mugisha for lending me his camera to record the game.
+  - David Qin for recording the battle.
+  - Ryan Namgung for agreeing to lose.
+
+
+

@@ -1,0 +1,103 @@
+  ---
+title: "Project B: Visualizing Communities"
+author: "Kevin Peng"
+output: html_notebook
+---
+
+**BELOW ARE INSTRUCTIONS FOR HOW TO COMPLETE THE ASSIGNMENT;
+MAKE SURE THAT YOU DELETE ALL OF THE COMMENTS IN ALL CAPS
+(AS WELL AS THIS COMMENT), BEFORE SUBMITTING**
+
+THIS FIRST CHUNK SHOULD LOAD ALL OF THE PACKAGES (I THINK
+YOU WILL NOT NEED TO CHANGE THIS)
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(fig.height = 5)
+knitr::opts_chunk$set(fig.width = 8.5)
+knitr::opts_chunk$set(out.width = "100%")
+knitr::opts_chunk$set(dpi = 300)
+
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(ggmap)
+library(viridis)
+library(forcats)
+```
+
+THE SECOND CHUNK SHOULD LOAD THE DATASET AND PRODUCE ANY
+FILTERED DATASETS THAT YOU NEED IN THE REST OF THE REPORT
+
+```{r}
+tracts <- read_csv("https://raw.githubusercontent.com/statsmaths/stat_data/gh-pages/acs_tract_data_2016.csv.gz")
+
+atlanta_greater_area <- filter(tracts, cbsa=="Atlanta-Sandy Springs-Roswell, GA")
+
+atlanta <- filter(atlanta, county %in% c("Fulton County", "Dekalb County", "Gwinnett County", "Cobb County", "Clayton County", "Coweta County", "Douglas County", "Fayette County", "Henry County"))
+```
+
+NOW, YOUR REPORT SHOULD GO HERE. FEEL FREE TO SPLIT IT UP
+WITH SECTIONS `##`, BUT THIS IS NOT REQUIRED. ADD CODE CHUNKS
+TO PRODUCE GRAPHICS WHERE THEY BELONG IN THE OUTPUT
+
+## Atlanta Commute Type
+
+Atlanta and its surrounding towns combine to make the Greater Atlanta Area, which has a population of approximately 5,551,335 people. I wanted to see how the majority of people from certain parts commuted to work.
+```{r}
+temp <- select(atlanta, starts_with("commute_"))
+atlanta$max_commute <- names(temp)[apply(temp,1,which.max)]
+qmplot(lon, lat, data = atlanta, geom="blank") +
+  geom_point(aes(color=race_black)) +
+  geom_point(aes(color=race_white))
+
+
+#temp <- select(yc_data, starts_with("commute_"))
+#yc_data$max_com_category <- names(temp)[apply(temp,1,which.max)]
+#qmplot(lon,lat, data=yc_data, geom="blank") +
+#  geom_point(aes(color=max_com_category))
+```
+Unsurprisingly, people from the surrounding area of Atlanta all commuted to work. What was interesting is that even within the city, walking and public transport was infrequent for commuting to work. Out of 930 data points, only 2 had a maximum commute of "walking," and the other 928 data points were all "car." I looked into it and learned that, in 2010, of all workers aged 16 that commuted to work within the city, 77.85% drove alone, 8.95% carpooled, and 13.2% used public transportation (Census, 2010). This does not show the percentage of people who walked, but it is very interesting to see how underutilized the public transport system is in Atlanta. My research gave me an explanation as to why public transportation did not appear in my graph. 
+
+
+## Race and Rent
+
+```{r}
+atlanta$ctime_00_25_less <- atlanta$ctime_00_05 + 
+  atlanta$ctime_05_09 + atlanta$ctime_10_14 + 
+  atlanta$ctime_15_19 + atlanta$ctime_20_24
+
+atlanta$ctime_25_45 <- atlanta$ctime_25_29 +
+  atlanta$ctime_30_34 + atlanta$ctime_35_39 +
+  atlanta$ctime_40_44
+
+atlanta$ctime_45_plus <- atlanta$ctime_45_59 + 
+  atlanta$ctime_60_89 + atlanta$ctime_90_99
+
+qmplot(lon, lat, data = atlanta, geom="blank") +
+  geom_point(aes(color = median_rent, size = race_white), alpha = 0.8) +
+  scale_color_viridis() +
+  geom_text(x = -84.406, y = 33.73, col="red", alpha=1, label="Downtown") +
+  geom_abline(y = 33.73, col="red", alpha = 0.3)
+
+
+  
+
+
+
+
+```
+This graphic shows the relationship between median rent and being white in the context of location within the Greater Atlanta Area. It is noticeable that places with higher rent in the map generally have a higher population proportion of white people, with most places where rent is 2000-3000+ has a 50-75% white population. In addition, there is a clear divide between the north and the south of Atlanta, where there is a large proportion of white people in the north half and much less white people in the south of Atlanta. 
+
+## References
+
+US Census, Means of Transportation To Work By Selected Characteristics,     
+  https://factfinder2.census.gov/faces/tableservices/jsf/pages/productview.xhtml?pid=ACS_10_1YR_S0802&prodType=table
+
+IF YOU CITE ANY EXTERNAL SOURCES INCLUDE PARANTHETICAL
+REFERENCES [SUCH AS: (Arnold, 2017)] IN THE TEXT AND
+ADD CITATIONS HERE.
+
+

@@ -1,0 +1,132 @@
+---
+title: 'Project B: Visualizing Communities'
+author: "Kevin Peng"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(fig.height = 5)
+knitr::opts_chunk$set(fig.width = 8.5)
+knitr::opts_chunk$set(out.width = "100%")
+knitr::opts_chunk$set(dpi = 300)
+
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(ggmap)
+library(viridis)
+library(forcats)
+library(smodels)
+require(gridExtra)
+
+```
+
+
+```{r}
+tracts <- read_csv("https://raw.githubusercontent.com/statsmaths/stat_data/gh-pages/acs_tract_data_2016.csv.gz")
+
+atlanta_greater_area <- filter(tracts, cbsa=="Atlanta-Sandy Springs-Roswell, GA")
+
+atlanta <- filter(atlanta_greater_area, county %in% c("Fulton County", "Dekalb County", "Gwinnett County", "Cobb County", "Clayton County", "Coweta County", "Douglas County", "Fayette County", "Henry County"))
+
+temp <- select(atlanta, starts_with("commute_"))
+atlanta$max_commute <- names(temp)[apply(temp,1,which.max)]
+
+temp1 <- select(atlanta, starts_with("race_"))
+atlanta$max_race <- names(temp1)[apply(temp1,1,which.max)]
+
+
+atlanta$rent_by_income_less_25 <- atlanta$rent_by_income_00_10 + 
+  atlanta$rent_by_income_10_15 + 
+  atlanta$rent_by_income_15_20 + 
+  atlanta$rent_by_income_20_25
+
+atlanta$rent_by_income_25_50 <- atlanta$rent_by_income_25_30 +
+  atlanta$rent_by_income_30_35 +
+  atlanta$rent_by_income_35_40 + 
+  atlanta$rent_by_income_40_50
+
+atlanta$rent_by_income_50_plus <- atlanta$rent_by_income_50_99  
+
+```
+
+
+# Atlanta: An Analysis
+
+## Commute Type
+
+Atlanta and its surrounding towns combine to make the Greater Atlanta Area, which has a population of approximately 5,551,335 people. I wanted to see how the majority of people from certain parts commuted to work.
+In order to do so, the data was filtered where each county was given a char value, "max_commute," that describes how the majority of people in a given county commuted to work. 
+```{r}
+qmplot(lon, lat, data = atlanta, geom="blank") +
+  geom_point(aes(color=max_commute)) +
+  geom_text(label= "Only 1 Walking County ---------------->",x = -84.69995, y = 33.77639, size = 3.5, col="blue")
+```
+Unsurprisingly, people from the surrounding area of Atlanta all commuted to work. What was interesting is that even within the city, walking and public transport was infrequent for commuting to work. Out of 558 data points, only 1 had a maximum commute of "walking," and the other 557 data points were all "car." I looked into it and learned that, in a 2010 census study, of all workers aged 16 that commuted to work within the city, 77.85% drove alone, 8.95% carpooled, and 13.2% used public transportation (Census, 2010). This study did not show the percentage of people who walked, but it is very interesting to see how low public transportation is used to commute to work compared to driving. This research gave me an explanation as to why public transportation did not appear in my graph. 
+
+
+## Race and Rent
+
+After seeing the trend of commuting to work, I wanted to see how people of different races populate the city and what sort of rent they pay.  
+
+```{r, fig.width=10,fig.height=10}
+plot1 <- qmplot(lon, lat, data = atlanta, geom="blank") +
+  geom_point(aes(size = race_asian, color = median_rent), alpha = 0.8) +
+  scale_color_viridis() +
+  geom_text(x = -84.406, y = 33.73, col="red", alpha=1, label="Downtown") +
+  geom_abline(y = 33.73, col="red", alpha = 0.3) +
+  geom_text(x = -84.306, y = 33.78, col="red", alpha=1, label="Chinatown", size=3) +
+  geom_abline(y = 33.73, col="red", alpha = 0.3) +
+  ggtitle(label = "Asian and Rent")
+
+plot2 <- qmplot(lon,lat,data=atlanta, geom="blank") +
+  geom_point(aes(color=median_rent, size = race_black), alpha = 0.8) +
+  scale_color_viridis() +
+  geom_text(x = -84.406, y = 33.73, col="red", alpha=1, label="Downtown") +
+  geom_abline(y = 33.73, col="red", alpha = 0.3) +
+  ggtitle(label = "Black and Rent")
+
+plot3 <- qmplot(lon,lat,data=atlanta, geom="blank") +
+  geom_point(aes(color=median_rent, size = race_white), alpha = 0.8) +
+  scale_color_viridis() +
+  geom_text(x = -84.406, y = 33.73, col="red", alpha=1, label="Downtown") +
+  geom_abline(y = 33.73, col="red", alpha = 0.3) +
+  ggtitle(label = "White and Rent")
+grid.arrange(plot1, plot2, plot3, ncol=2)
+```
+This graphic shows the relationship between median rent and race in the context of location within the Greater Atlanta Area. It is noticeable that places with higher rent in the map generally have a higher population proportion of white people, with most places where rent is 2000-3000+ having a 50-75% white population. In addition, there is a clear divide between the north and the south of Atlanta, where there is a large proportion of white and Asian people in the north half and less white and Asian people in the south of Downtown Atlanta. This shows that there may be some level of segregation within the city between whites/Asians and the blacks, with the downtown area acting as the border. In addition, something that caught my eye with the Asian community was right above downtown area. There was a large spike in percentage of Asians around there. Through a search of the Atlanta map, I learned that the location with the spike was Atlanta's Chinatown. Once I learned of the trends from these graphs, where certain races are somewhat "pushed" to a certain location of Atlanta, I was curious if there was a relationship between race and percentage of income used for rent. I decided to delve further to find this relationship.
+
+## Race and Percentage of Income Used For Rent
+
+I merged data numbers together for income and binned them into 3 unique groups: 0-25% of income used for rent, 25-50% of income used for rent, and 50%+ of income used for rent. Figures were then created for each bin, comparing it to the median rent, with an aestetic of the majority race in a given location. 
+
+```{r, fig.width=8, fig.height=10 }
+plot4 <- ggplot(atlanta, aes(median_rent, rent_by_income_less_25)) + geom_point(aes(color=max_race)) + ggtitle(label="Rent = 0-25% of Income")
+plot5 <- ggplot(atlanta, aes(median_rent, rent_by_income_25_50)) + geom_point(aes(color=max_race))   + ggtitle(label="Rent = 25-50% of Income")
+plot6 <- ggplot(atlanta, aes(median_rent, rent_by_income_50_plus)) + geom_point(aes(color=max_race)) + ggtitle(label="Rent = 50-100% of Income")
+
+grid.arrange(plot4, plot5, plot6, ncol=1)
+
+```
+
+This visualization shows a few trends in terms of race vs rent. One very noticeable one was that generally, less blacks paid 0-25% of their income towards rent compared to white people and more blacks paid 50-100% of their income towards rent than white people. When comparing the two races, a clear trend is seen. When looking at the green dots (race_black) in the 0-25% graph compared to the purple dots (race_white), generally the green dots are closer to the x-axis than the purple dots. This means that lower percentages of black people in counties only pay 0-25% of their income towards rent while white people are generally better off, with the dots appearing further away from the x-axis. This can be interpreted as some level of social mobility. Since white people are able to pay a lower percentage of their income towards rent, they will be able to thereby save more and be able to generate more wealth. Other trends I notices were that whites were generally the ones paying for higher rents, yet still not paying 50-100% of their income. This can be interpreted that white people hold higher paying jobs compared to other races. In terms of Asians and other races (Pacific-Islanders, Mixed, Vietnam), there were only 4 out of 558 counties that had a majority Asian/other which makes it difficult to draw a definitive conclusion on their race and rent as a percentage of income.
+
+## Conclusion
+
+In conclusion, from my visualizations, I was able to conclude that despite having a public transportation system, commuting to work by car was by far the most frequent mode of travel. There were 557/558 counties that had a majority of people commuting, with 1 lone county within the city where the majority of people walked. 
+
+In addition, by looking at median rent and race, Atlanta ultimately ends up having some level of segregation between the whites and the blacks. From the maps, one can conclude that blacks are the dominant population within the downtown and southern part of the city, whereas whites are the dominant population within the further, suburban parts of the Greater Atlanta Area. This is likely the result of whites having higher paying jobs, as the visualization with the percentage of rent shows. White people are able to afford more expensive rent and spend less percent of their income paying it, compared to blacks. Another small observation I made was that Chinatown had a sizable proportion of Asians. The Asian population was not sizable enough within the visualizations to come up with any other conclusions regarding them. 
+
+
+## References
+
+US Census, Means of Transportation To Work By Selected Characteristics,     
+  https://factfinder2.census.gov/faces/tableservices/jsf/pages/productview.xhtml?pid=ACS_10_1YR_S0802&prodType=table
+
+
+

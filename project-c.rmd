@@ -1,0 +1,132 @@
+---
+title: "Kevin's 3 Pointers"
+author: "Kevin Peng"
+output: html_document
+---
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(out.width = "100%")
+knitr::opts_chunk$set(dpi = 300)
+
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(ggmap)
+library(viridis)
+library(forcats)
+library(smodels)
+```
+
+## Introduction
+
+Similar to my first project, I decided to analyze my own basketball game. 
+Instead of playing a 1v1 game versus someone, I decided to record shots from 
+around the 3-point line and determine shooting patterns. The three hypothesis 
+that I explore are:
+
+
+1.) For any given, unguarded, practice shot, I have >= 50% chance of making it. 
+
+2.) After making a shot, the next shot will have a higher chance of going in.
+
+3.) I am more likely to go on a make streak from the left side of the court compared to 
+    the right side.
+
+```{r, include=FALSE}
+three_data <- read_csv("https://raw.githubusercontent.com/URstats/stat209-s18-kevpeng/master/project-c.csv")
+```
+
+## Methods
+
+In order to collect this data, I asked a friend to sit on the side and
+record me taking 100 shots, 20 from 5 different points around the three point
+line: The corners, the wings, and the top of the key, looking towards the baseline 
+(Figure 1). With each shot, there were variables considered, which are in the data dictionary below. 
+
+The inferencial models used for linear regression were: 
+
+\t 1.) shots_made compared to the shot_number
+
+\t 2.) shot_made_streak compared to the shot_number 
+
+The model used for inference of the mean: 
+
+\t 1.) shot_made_streak compared to location of the shot. 
+
+
+#### Data dictionary for the dataset "three_data":
+- location: location on the court where a shot was taken. Options can be seen around the three point line of Figure 1.
+- shot_number: a numeric variable 1-100 describing which shot is being taken.
+- shots_made: a numeric variable counter that describes how many shots were made
+- shot_made_streak: a numeric variable that acts as a counter keeping track of consecutive shots made.
+- made_miss_streak: a categorical variable describing the streak type that is happening at a given shot_number. Options include: miss_X, and make_X, where X is an positive integer of the streak.
+
+[Figure 1. Shot locations](https://www.coachesclipboard.net/images/xHalfCourtTerms.gif.pagespeed.ic.f_tQMgajQe.png)
+
+
+
+
+## Results
+
+### Linear Regression
+
+```{r, include=TRUE}
+model <- lm_basic(shots_made ~ 1 + shot_number, data = three_data)
+reg_table(model, level = 0.95)
+qplot(shot_number, shots_made, data = three_data) + geom_smooth(method="lm")
+```
+
+This plot shows a line y = ax + b, where y is the number of shots made, x is the number of shots taken and a/b are the intercept and slope from the linear regression. The formula and plot both show a positive relationship between the variables, which is expected, and a line that predicts, if I take x-amount of shots, I will make y of them. 
+
+
+```{r}
+model <- lm_basic(shot_made_streak ~ 1 + shot_number, data = three_data)
+reg_table(model, level = 0.95)
+qplot(shot_number, shot_made_streak,data = three_data) + geom_smooth(method="lm")
+
+
+```
+
+This plot shows a line y = ax + b, where y is the shooting streak, x is the number of shots taken and a/b are the intercept and slope from the linear regression. The intercept of the line is 1.12, and the slope when considering shot_number is -0.0058. Plugging in a number x would determine what the average streak I go on is. 
+
+### Inference for the mean
+
+```{r}
+model <- lm_basic(shot_made_streak ~ 1 + location, data = three_data)
+reg_table(model, level = 0.95)
+ggplot(three_data, aes(location, shot_made_streak)) +
+  geom_violin()
+```
+
+The violin plot shows the relationship between locations and average shot streak.
+The regression table shows how each location affects the average shot streak, each named
+based off Figure 1. 
+
+## Conclusions
+
+#### Linear regression test
+The relationship between shots_made and shot_number show a positive relationship, and more importantly, above 0.50 for the slope when considering shots_made. When I plug in a number 100, for the shot_number, the linear regression predicts a number of shots made as ~51.3 made. Combined with the multiple R-squared statistic being close to 1 and the intercepts and slope not including 0, I am confident with the result and that there is at least a 50% chance that I make a wide open 3-point shot, and can confirm the first hypothesis.   
+
+The relationship between shots_made and shots_made_streak show a negative relationship. 
+We are 95% confident that the true mean of the shots_made_streak will be 1.213, between 0.7518 and 1.675. The positive numbers of the confidence interval show that this number is statistically significant. As a result, we can confirm the second hypothesis that if a shot is made, the probability of the next shot is higher. 
+
+The slope on the other hand, was between -0.013743 and 0.002. Despite the upper bound being barely above 0, I would not consider the shot number as being statistically significant, as in addition, the multiple R-squared statistic is close to 0. As a result, we can also conclude that shot number does not affect the probability of making consecutive buckets. 
+
+Despite rejecting the second hypothesis, the plot for it showed an interesting trend. As I shot more, I was going on less streaks. I believe this may have to do with fatigue as I shot more shots.
+
+#### Inference for the mean
+
+The left_corner (intercept) was the only location that had statistical significance, 
+with both parts of the confidence interval being positive. For that location, 
+I am 95% confident that the true mean of the shot_make_streak was 1.91667, between 1.3235 and 
+2.510. However, because the other's datas were not significant, as their confidence interval all contained 0, and the R-squared statistic was too close to 0, we reject the third hypothesis that location affected the average shot_make_streaks. 
+
+
+## References
+
+1. https://www.coachesclipboard.net/images/xHalfCourtTerms.gif.pagespeed.ic.f_tQMgajQe.png
+
+

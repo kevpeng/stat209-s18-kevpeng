@@ -1,0 +1,143 @@
+---
+title: "The Final Minute: NBA"
+author: "Kevin Peng"
+output: html_document
+---
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(out.width = "100%")
+knitr::opts_chunk$set(dpi = 300)
+
+library(plyr)
+
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(ggmap)
+library(viridis)
+library(forcats)
+library(smodels)
+require(gridExtra)
+
+```
+
+
+
+```{r}
+# read in data
+nba_shots <- read_csv("https://statsmaths.github.io/stat_data/nba_shots.csv")
+
+# seperate data by time in game
+last_minute <- filter(nba_shots, game_clock <= 60 & period == 4) 
+other_minutes <- filter(nba_shots, game_clock >= 60)
+
+# extract data of close games in the last minute
+last_minute_close <- filter(last_minute, final_margin <= 3 & final_margin >= -3)
+temp <- group_summarize(last_minute_close, player_name)
+
+# extract data of close games not in the last minute
+other_minutes_close <- filter(other_minutes, final_margin <=3 & final_margin >= -3)
+temp1 <- group_summarize(other_minutes_close, player_name)
+```
+
+### Introduction
+In any sport, the last minute/point is the most important, as it will ultimately decide the final result of the competition. A lot of things can happen in the last minute of a basketball game: no-calls, buzzer beaters, wild finishes, and more. Some examples that come to mind include [Michael Jordan](https://www.youtube.com/watch?v=vdPQ3QxDZ1s)'s buzzer beater to win his 6th and final championship, [Tracy McGrady](https://www.youtube.com/watch?v=M-8FksMVAdU) scoring 13 points in 35 seconds to come back from 8 points down in the final minute, and [Steph Curry](https://www.youtube.com/watch?v=S9IuJzJMN3I)'s shot against the OKC Thunder that cemented him as the League's greatest shooter. The final minute is where legends are made. In this report, I did not try to find out who the next legend is, rather, I looked for trends on how the final minute in the game affected the shot percentage for a close game.  
+
+##### Thesis: Shots taken in the last minute of a close game (final margin <= 3) have a lower chance of being made than shots taken at other points in time of a close game. 
+
+
+
+
+### Data Analysis
+
+```{r}
+plot1 <- ggplot(data = last_minute_close, aes(close_def_dist, shot_dist)) +
+  geom_point(aes(color=shot_result)) + ggtitle("Close Game Last Minute")
+  
+
+plot2 <- ggplot(data = other_minutes_close, aes(close_def_dist, shot_dist)) + 
+  geom_point(aes(color=shot_result)) + ggtitle("Close Game Not Last Minute") +
+  annotate("rect", xmin = 20, xmax = 60,
+                   ymin = 0, ymax = 8,
+                   fill = "purple", alpha = 0.1) +
+  annotate("text", x = 40, y = 7,
+            label = "Wide open shots")
+
+
+grid.arrange(plot1, plot2, ncol=2)
+```
+
+This graphic shows shot results based on distance from the basket and the distance of the closest defender and whether or not the shot was taken in the last minute or not. Without printing out numbers, it is clear that it seems more difficult to take a close shot without a defender due to not having data points where shot_dist < 10 and chose_def_dist > ~15. The logical reason this could be the case is that players are more focused in the last minute of a close game and willing to work harder to stay with them on defense and not give up open shots.
+
+```{r, include=FALSE}
+# frequencies so can compare
+sum_made_close_lmin <- sum(last_minute_close$shot_result == "made")
+len_lmin <- length(last_minute_close$shot_result)
+#not last min
+sum_made_close_nlmin <- sum(other_minutes_close$shot_result == "made")
+len_nlmin <- length(other_minutes_close$shot_result)
+
+# hand fill out chart
+data <- data.frame(x=rep(c("made", "missed"), each=2),
+                  time_shot=rep(c("last minute", "not last minute"), 1), 
+                  freq=c(sum_made_close_lmin/len_lmin,
+                  sum_made_close_nlmin/len_nlmin, 
+                  1 - sum_made_close_lmin/len_lmin, 
+                  1 - sum_made_close_nlmin/len_nlmin))
+# check data
+# head(data)
+
+data_sorted <- arrange(data, time_shot, freq)
+head(data_sorted)
+data_cumsum <- ddply(data_sorted, "freq", transform,
+                     label_ypos=cumsum(freq))
+# the function didn't put it in the right order so hard
+# coding the values in
+data_cumsum$label_ypos[[1]] = (1 + 0.6028369) / 2
+data_cumsum$label_ypos[[2]] = (1 + 0.5416472) / 2
+data_cumsum$label_ypos[[3]] = (0.5416472) / 2
+data_cumsum$label_ypos[[4]] = (0.6028369) / 2
+
+
+head(data_cumsum)
+```
+
+```{r}
+# plot the chart
+ggplot(data=data_cumsum, aes(x=time_shot, 
+  y=freq, fill=x)) +
+  geom_bar(stat="identity") +
+  geom_text(aes(y=label_ypos, label=freq), vjust=1, 
+      color="black", size=5) +
+  scale_fill_brewer(palette="Paired") +
+  theme_minimal() + ggtitle("Frequency of Made Shots Based on Time in a Close Game")
+```
+
+```{r}
+
+cat(c("last minute close game made shots:", sum(last_minute_close$shot_result == "made"), "\n")) 
+
+cat(c("last minute close game missed shots:",sum(last_minute_close$shot_result == "missed"), "\n"))
+
+cat(c("percentage made:", sum(last_minute_close$shot_result=="made") / length(last_minute_close$shot_result), "\n"))
+
+cat(c("not last minute close game made shots:",sum(other_minutes_close$shot_result == "made"), "\n"))
+cat(c("not last minute close game missed shots:",sum(other_minutes_close$shot_result == "missed"), "\n"))
+cat(c("percentage made:", sum(other_minutes_close$shot_result=="made") / length(other_minutes_close$shot_result), "\n"))
+
+```
+
+This frequency bar graph considers made shots out of all taken shots as a value out of 1, in order for an easy comparison. From the data, it is clear that there is certainly less percentage of shots made in the final minute of a close game vs. any other point in the game. As a result, we are able to prove that the final minute does result in a decrease in shooting percentage in a close game for the NBA as a whole. 
+
+### Conclusion
+Through the numbers, I was able to confirm that the last minute in a close game does result in a lower percentage shooting percentage compared to other parts of a close game. Reasons that I believe this is include nerves, as the shot is even more important at this point, and a higher level of defense from all players, which results in less open and easy shots. With this data, further analysis could be done and it would be easy to single out players who are better than others in making these shots, which would statistically cement them as strong closers of games. 
+
+### Sources
+
+Videos:  
+https://www.youtube.com/watch?v=vdPQ3QxDZ1s   
+https://www.youtube.com/watch?v=M-8FksMVAdU   
+https://www.youtube.com/watch?v=S9IuJzJMN3I  
